@@ -5,7 +5,7 @@ from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.cache import cache
 
-from ..models import Post, Group
+from ..models import Post, Group, Follow
 from ..forms import PostForm
 
 User = get_user_model()
@@ -21,6 +21,11 @@ class TestPostsViews(TestCase):
         cls.user_author = User.objects.create(username='user_author')
         cls.post_author = Client()
         cls.post_author.force_login(cls.user_author)
+
+        cls.another_user = User.objects.create(username='another_user')
+        cls.authorized_user = Client()
+        cls.authorized_user.force_login(cls.another_user)
+
         small_gif = (
             b'\x47\x49\x46\x38\x39\x61\x02\x00'
             b'\x01\x00\x80\x00\x00\x00\x00\x00'
@@ -128,7 +133,7 @@ class TestPostsViews(TestCase):
         self.assertEqual(len(response.context['page_obj']), 0)
 
     def test_cache(self):
-        """Тестирование использование кеширования"""
+        """Тест кеширования главной страницы."""
         response = self.post_author.get(reverse('posts:index'))
         cache_check = response.content
         post = Post.objects.get(pk=1)
@@ -138,6 +143,20 @@ class TestPostsViews(TestCase):
         cache.clear()
         response = self.post_author.get(reverse('posts:index'))
         self.assertNotEqual(response.content, cache_check)
+
+    def test_follow(self):
+        """ Проверяется, что после подписки появится новый обект Follow."""
+        follow = reverse('posts:profile_follow',
+                         kwargs={'username': self.another_user})
+        self.post_author.get(follow, follow=True)
+        self.assertEqual(Follow.objects.all().count(), 1)
+
+    def test_unfollow(self):
+        """ а после отписки он исчезнет."""
+        unfollow = reverse('posts:profile_unfollow',
+                           kwargs={'username': self.another_user})
+        self.post_author.get(unfollow, follow=True)
+        self.assertEqual(Follow.objects.all().count(), 0)
 
 
 class PaginatorViewsTest(TestCase):
