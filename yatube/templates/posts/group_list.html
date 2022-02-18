@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}
+  Записи сообщества {{ group.title }}
+{% endblock %}
+{% block content %}
+  <div class="container py-5">
+    <h1>{{ group }}</h1>
+    <p>{{ group.description }}</p>
+    {% for post in page_obj %}
+      {% include 'includes/posts.html' %}
+      <p>
+      <a href="{% url 'posts:post_detail' post.id %}">подробная информация </a>
+      </p>
+      {% if post.author == user %}
+        <a href="{% url 'posts:post_edit' post.id %}">Редактировать</a>
+      {% endif %}
+      {% if not forloop.last %}<hr>{% endif %}
+    {% endfor %}
+    {% include 'includes/paginator.html' %}
+  </div>
+{% endblock %}
