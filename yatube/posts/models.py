@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-
+from django.db.models.constraints import UniqueConstraint
 
 User = get_user_model()
 
@@ -71,17 +71,23 @@ class Comment(models.Model):
         on_delete=models.CASCADE,
         related_name='comments',
         verbose_name='Пост',
+        help_text='Комментируемый пост'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='comments',
         verbose_name='Автор',
+        help_text='Автор комментария',
     )
-    text = models.TextField()
+    text = models.TextField(
+        verbose_name='Текст комментария',
+        help_text='Введите комментарий'
+    )
     created = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата публикации',
+        help_text='Дата комментария'
     )
 
     class Meta:
@@ -95,8 +101,8 @@ class Follow(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="follower",
-        verbose_name="Подписчик"
+        related_name='follower',
+        verbose_name='Подписчик',
     )
     author = models.ForeignKey(
         User,
@@ -104,6 +110,9 @@ class Follow(models.Model):
         related_name='following',
         verbose_name='На кого подписались',
     )
+
+    class Meta:
+        UniqueConstraint(fields=['user', 'author'], name='unique_couple')
 
     def __str__(self) -> str:
         return self.user.username

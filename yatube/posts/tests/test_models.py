@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from ..models import Group, Post
+from ..models import Group, Post, Follow, Comment
 
 User = get_user_model()
 
@@ -13,7 +13,7 @@ class PostModelTest(TestCase):
         cls.user = User.objects.create_user(username='auth')
         cls.post = Post.objects.create(
             author=cls.user,
-            text='Тестовый текст',
+            text='Тестовый текст должен быть больше 15 символов',
         )
 
     def test_post_str(self):
@@ -94,3 +94,82 @@ class GroupModelTest(TestCase):
                 self.assertEqual(
                     group._meta.get_field(field).help_text, expected_value
                 )
+
+
+class FollowModelTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.author = User.objects.create_user(username='author')
+        cls.follower = User.objects.create_user(username='follower')
+        cls.follow = Follow.objects.create(
+            author=cls.author,
+            user=cls.follower
+        )
+
+    def test_follow_str(self):
+        """Проверка __str__ у follow."""
+        self.assertEqual(self.follow.user, self.follower)
+
+    def test_follow_verbose_name(self):
+        """Проверка verbose_name у follow."""
+        follow = FollowModelTest.follow
+        field_verbose = {
+            'author': 'На кого подписались',
+            'user': 'Подписчик',
+        }
+        for field, expected_value in field_verbose.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    follow._meta.get_field(field).verbose_name, expected_value
+                )
+
+class CommentModelTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='user')
+        cls.post = Post.objects.create(
+            author=cls.user,
+            text='Тестовый текст',
+        )
+        cls.comment = Comment.objects.create(
+            post=cls.post,
+            author=cls.user,
+            text='Тестовый комментрий',
+        )
+
+    def test_comment_str(self):
+        """Проверка __str__ у comment."""
+        self.assertEqual(self.post.text, str(self.post))
+
+    def test_comment_verbose_name(self):
+        """Проверка verbose_name у comment."""
+        comment = CommentModelTest.comment
+        field_verbose = {
+            'text': 'Текст комментария',
+            'created': 'Дата публикации',
+            'author': 'Автор',
+            'post': 'Пост',
+        }
+        for field, expected_value in field_verbose.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    comment._meta.get_field(field).verbose_name, expected_value
+                )
+
+    def test_comment_help_text(self):
+        """Проверка help_text у comment."""
+        comment = CommentModelTest.comment
+        feild_help_texts = {
+            'text': 'Введите комментарий',
+            'created': 'Дата комментария',
+            'author': 'Автор комментария',
+            'post': 'Комментируемый пост',
+        }
+        for field, expected_value in feild_help_texts.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    comment._meta.get_field(field).help_text, expected_value
+                )
+

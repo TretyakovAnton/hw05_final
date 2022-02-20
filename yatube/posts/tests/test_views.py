@@ -5,7 +5,7 @@ from django import forms
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.cache import cache
 
-from ..models import Post, Group, Follow
+from ..models import Post, Group, Follow, Comment
 from ..forms import PostForm
 
 User = get_user_model()
@@ -109,7 +109,7 @@ class TestPostsViews(TestCase):
 
     def test_correct_context_post_create(self):
         """Шаблон post_create сформирован с правильным контекстом."""
-        response = self.post_author.get(reverse("post:post_create"))
+        response = self.post_author.get(reverse('post:post_create'))
         self.assertIn('form', response.context)
         self.assertIsInstance(response.context['form'], PostForm)
 
@@ -131,6 +131,34 @@ class TestPostsViews(TestCase):
             reverse('post:group_list', kwargs={'slug': self.group_2.slug})
         )
         self.assertEqual(len(response.context['page_obj']), 0)
+
+    def test_image_context_list(self):
+        """Проверка, что при выводе поста с картинкой изображение
+        передаётся на главную страницу, страницу профиля, страницу группы.
+        """
+        urls = [
+            reverse('post:index'),
+            reverse('post:group_list', kwargs={'slug': self.group.slug}),
+            reverse('post:profile', kwargs={'username': self.user_author}),
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                response = self.post_author.get(url)
+                image = response.context['page_obj'][0].image
+                self.assertEqual(image, self.post.image)
+
+    def test_image_context_post(self):
+        """Проверка, что при выводе поста с картинкой изображение
+        передаётся страницу поста.
+        """
+        response = self.post_author.get(
+            reverse(
+                'post:post_detail',
+                kwargs={'post_id': self.post.id}
+            )
+        )
+        image = response.context['post'].image
+        self.assertEqual(image, self.post.image)
 
     def test_cache(self):
         """Тест кеширования главной страницы."""
@@ -157,6 +185,46 @@ class TestPostsViews(TestCase):
                            kwargs={'username': self.another_user})
         self.post_author.get(unfollow, follow=True)
         self.assertEqual(Follow.objects.all().count(), 0)
+
+    def test_post_list_follow_user_and_unfollow_user(self):
+        """Новая запись автора появляется в ленте тех,
+           кто на него подписан и не появляется в профиле
+           неподписавшихся на автора."""
+        follow = reverse('post:profile_follow',
+                         kwargs={'username': self.another_user})
+        self.post_author.get(follow, follow=True)
+        self.post = Post.objects.create(text='тест', author=self.another_user)
+        response_follow = self.post_author.get(reverse('post:follow_index'))
+        self.assertIn(self.post, response_follow.context['posts'])
+        response_unfollow = self.authorized_user.get(reverse(
+            'post:follow_index')
+        )
+        self.assertNotIn(self.post, response_unfollow.context['posts'])
+
+    def test_authorized_user_comment_posts(self):
+        """авторизированный пользователь может комментировать посты"""
+        comments_count = Comment.objects.count()
+        form_data = {'text': 'тест'}
+        self.post_author.post(
+            reverse('post:add_comment', kwargs={'post_id': 1}),
+            data=form_data,
+            follow=True
+        )
+        last_comment = Comment.objects.latest('created')
+        self.assertEqual(Comment.objects.count(), comments_count + 1)
+        self.assertEqual(last_comment.text, form_data['text'])
+        self.assertEqual(last_comment.author, self.user_author)
+
+    def test_unauthorized_user_comment_posts(self):
+        """Неавторизованный пользователь не может комментировать запись."""
+        comments_count = Comment.objects.count()
+        form_data = {'text': 'тест'}
+        self.guest_client.post(
+            reverse('post:add_comment', kwargs={'post_id': 1}),
+            data=form_data,
+            follow=True
+        )
+        self.assertEqual(Comment.objects.count(), comments_count)
 
 
 class PaginatorViewsTest(TestCase):
