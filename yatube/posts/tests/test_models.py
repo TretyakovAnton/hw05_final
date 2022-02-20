@@ -124,6 +124,7 @@ class FollowModelTest(TestCase):
                     follow._meta.get_field(field).verbose_name, expected_value
                 )
 
+
 class CommentModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -172,4 +173,3 @@ class CommentModelTest(TestCase):
                 self.assertEqual(
                     comment._meta.get_field(field).help_text, expected_value
                 )
-
