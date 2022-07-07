@@ -14,6 +14,7 @@
 
 
 ##Мануал по устновке проекта
+
 ####*1.Клонировать репозиторий и перейти в него в командной строке:*
 ```
 git clone https://github.com/TretyakovAnton/api_final_yatube.git
