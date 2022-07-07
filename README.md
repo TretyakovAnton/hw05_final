@@ -17,7 +17,7 @@
 
 <h4><i>1.Клонировать репозиторий и перейти в него в командной строке:</i></h4>
 
-    git clone https://github.com/TretyakovAnton/api_final_yatube.git
+    git clone https://github.com/TretyakovAnton/hw05_final.git
 
     cd api_final_yatube
 
