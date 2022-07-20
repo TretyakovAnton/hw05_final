@@ -20,7 +20,6 @@ def index(request):
     context = {
         'page_obj': page_obj,
     }
-    # Выполняет указанный шаблон с переданным словарем контекста и возвращает HttpResponse с полученным содержимым.
     return render(request, 'posts/index.html', context)
 
 
@@ -58,7 +57,6 @@ def profile(request, username):
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    # ссылаемся на автора использея related_name в Post и считаем сумму его постов
     count = post.author.posts.count()
     comments = post.comments.all()
     form = CommentForm(request.POST or None)
@@ -131,11 +129,6 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    # Сначала ищется пользователь с заданным именем.Для него ищутся объекты
-    # в таблице Follow, которые на него ссылаются. Далее для всех найденных
-    # записей в Follow ищутся связанные с ними авторы.А далее все
-    # посты, которые связанны с найденными авторами.
-    # https://ru.stackoverflow.com/questions/1194688/%D0%9E%D0%B1%D1%8A%D1%8F%D1%81%D0%BD%D0%B8%D1%82%D0%B5-%D0%B7%D0%B0%D0%BF%D1%80%D0%BE%D1%81-%D0%BA-%D0%B1%D0%B0%D0%B7%D0%B5
     posts = Post.objects.filter(author__following__user=request.user)
     paginator = Paginator(posts, POST_IN_PAGE)
     page_number = request.GET.get('page')
